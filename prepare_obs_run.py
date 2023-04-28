@@ -69,6 +69,11 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", action="store_true",
                     help="debug mode")
 
+    parser.add_argument("-m", "--max-offset-star-radius", type=float, default=None,
+        help="Maximum offset star radius in arcsec")
+    parser.add_argument("--max-mag", type=float, default=None,
+        help="Maximum offset star magnitude")
+
     args = parser.parse_args()
     filename = args.filename
 
@@ -93,12 +98,12 @@ if __name__ == '__main__':
 
             if i < len(table)-1: #not the last item
                 next_entry = names[i+1]
-                if next_entry.split('_')[0] == name and next_entry.split('_')[1] == 'host':
-                    host_ra = coords[i+1].ra.deg
-                    host_dec = coords[i+1].dec.deg
-                    print("Host galaxy coordinates provided. RA = %.5f Dec = %.5f"%(host_ra, host_dec))
+                if len(next_entry.split('_'))>1 and next_entry.split('_')[0] == name and next_entry.split('_')[1] == 'host':
+                        host_ra = coords[i+1].ra.deg
+                        host_dec = coords[i+1].dec.deg
+                        print("Host galaxy coordinates provided. RA = %.5f Dec = %.5f"%(host_ra, host_dec))
 
-                    skip_host = True #Because of this flag, the next item is skipped.
+                        skip_host = True #Because of this flag, the next item is skipped.
                 else:
                     host_ra = None
                     host_dec = None
@@ -109,9 +114,10 @@ if __name__ == '__main__':
             # print(host_ra, host_dec)
             if args.telescope == 'Keck':
                 finder_size = 4.0/60 #3 arcmin, LRIS
-                max_separation = 3*60 #2 arcmin, LRIS
+                max_separation = 3*60 #3 arcmin, LRIS
                 min_mag = 13
-                max_mag = 19.9
+                max_mag = 18.5
+
             elif args.telescope == 'Lick':
                 finder_size = 4/60 #4 arcmin, Kast
                 max_separation = 3*60 #3 arcmin, Kast
@@ -124,6 +130,8 @@ if __name__ == '__main__':
                 min_mag = 11
                 max_mag = 17
 
+            if args.max_mag: max_mag = args.max_mag
+
             #Obtain PA and separation from target ra/dec and host ra/dec
             #To do: make it not duplicate for the "get_finder" function.
             if (host_ra is not None) and (host_dec is not None):
@@ -132,7 +140,7 @@ if __name__ == '__main__':
 
             starlist_entry = get_finder( ra_deg, dec_deg, name,  finder_size, mag = mag,
                             minmag=min_mag, maxmag=max_mag,
-                            num_offset_stars = 1, min_separation = 30,
+                            num_offset_stars = 3, min_separation = 15,
                             max_separation = None,\
                             host_ra = host_ra, host_dec = host_dec,
                             directory = 'finders',

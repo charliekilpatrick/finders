@@ -28,7 +28,10 @@ from scipy.ndimage.filters import gaussian_filter
 import warnings
 from astroquery.mast import Catalogs
 from astroquery.vizier import Vizier
+import requests
 warnings.filterwarnings("ignore")
+
+Vizier.ROW_LIMIT = -1
 
 def deg2hour(ra, dec, sep=":"):
     '''
@@ -81,51 +84,78 @@ def query_sky_mapper_catalogue(ra, dec, radius_deg, minmag=14, maxmag=18.5):
     Sends a VO query to the SkyMapper catalogue.
     '''
 
-    url = "http://skymapper.anu.edu.au/sm-cone/query?RA=%.6f&DEC=%.6f&SR=%.4f&RESPONSEFORMAT=CSV"%(ra, dec, radius_deg)
+    coord = SkyCoord(ra, dec, unit='deg')
 
-    f = open("/tmp/skymapper_cat.csv", "wb")
-    page = urlopen(url)
-    content = page.read()
-    f.write(content)
-    f.close()
+    filters = {'Ngood':'>5',
+        'ClassStar':'>0.7'}
 
-    # Read RA, Dec and magnitude from CSV
-    catalog = Table.read("/tmp/skymapper_cat.csv", format="ascii.csv")
+    vquery = Vizier(columns=['RAICRS','DEICRS','ClassStar',
+        'Ngood','rPSF','e_rPSF'], column_filters=filters)
 
-    mask = (catalog["class_star"]>0.7) * (catalog["ngood"] >5)  * (catalog['r_psf']>minmag) * (catalog['r_psf']<maxmag)
-    catalog = catalog[mask]
+    radius = 2*radius_deg*u.deg
 
-    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float)])
-    newcat["ra"] = catalog["raj2000"]
-    newcat["dec"] = catalog["dej2000"]
-    newcat["mag"] = catalog["r_psf"]
+    resp = vquery.query_region(coord, width=radius, catalog=['II/358/smss'])
+
+    if len(resp)>0:
+        catalog = resp[0]
+    else:
+        return(None)
+
+    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float64)])
+    newcat["ra"] = catalog["RAICRS"]
+    newcat["dec"] = catalog["DEICRS"]
+    newcat["mag"] = catalog["rPSF"]
 
     return newcat
 
-def query_ps1_catalogue(ra, dec, radius_deg, minmag=13, maxmag=18.5, debug = False):
+def query_ps1_catalogue(ra, dec, radius_deg, minmag=13, maxmag=18.0, debug = False):
     '''
     Sends a VO query to the PS1 catalogue.
     Filters the result by mangitude (between 15 and 18.5)
     and by the PSF-like shape of the sources.
     '''
 
-    result = Vizier.query_region(SkyCoord(ra, dec, unit='deg'),
-        width=str(radius_deg)+'d', catalog='II/349')
+    for i in np.arange(5):
+        try:
+            result = Vizier.query_region(SkyCoord(ra, dec, unit='deg'),
+                width=str(radius_deg)+'d', catalog='II/349')
+            break
+        except requests.exceptions.ConnectionError:
+            pass
+
     if len(result)>0:
         catalog=result[0]
+    else:
+        return(None)
 
-    mask = (catalog['Nd']>1) & (catalog['rmag']>minmag) & (catalog['rmag']<maxmag) &\
-        (catalog['imag']-catalog['iKmag'] < 5.0)
+    if debug:
+        nobj = len(catalog)
+        mask1 = catalog['rmag']>minmag
+        mask2 = catalog['rmag']<maxmag
+        mask3 = (np.abs(catalog['imag'].data-catalog['iKmag'].data)<2.0)
+
+        n1 = len(catalog[mask1])
+        n2 = len(catalog[mask2])
+        n3 = len(catalog[mask3])
+
+        print('r-mag minimum cuts',nobj-n1)
+        print('r-mag maximum cuts',nobj-n2)
+        print('i-mag Kron cuts',nobj-n3)
+
+    mask = (catalog['Nd']>1) & (catalog['rmag']>minmag) &\
+        (catalog['rmag']<maxmag) &\
+        (np.abs(catalog['imag'].data-catalog['iKmag'].data)<2.0)
 
     if debug: print(catalog["imag"] - catalog["iKmag"])
 
     catalog = catalog[mask]
 
-    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float)])
+    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float64)])
     newcat["ra"] = catalog["RAJ2000"]
     newcat["dec"] = catalog["DEJ2000"]
     newcat["mag"] = catalog["rmag"]
 
+    print('There are',len(newcat),'sources')
 
     return newcat
 
@@ -282,7 +312,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
                 return_starlist = False,
                 host_ra = None, host_dec = None,
                 telescope="Keck", directory=".",
-                minmag=13, maxmag=19.5, num_offset_stars = 1,
+                minmag=13, maxmag=19.5, num_offset_stars = 3,
                 min_separation = 1, max_separation = None,
                 mag=np.nan, \
                 marker = 'circle', source_comments = None,
@@ -355,14 +385,9 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         print (catalog)
 
 
-    if (len(catalog)<3):
+    if (len(catalog)==0):
         if debug: print ("Looking for a bit fainter stars up to mag: %.2f"%(maxmag+0.5))
         catalog = query_ps1_catalogue(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag+0.5)
-
-    # if (len(catalog)<3):
-    #     print ("Restarting with larger radius %.2f arcmin"%(rad*60+0.5))
-    #     get_finder(ra, dec, name, rad+0.5/60, directory=directory, minmag=minmag, maxmag=maxmag+0.5, mag=mag, starlist=starlist, telescope=telescope)
-    #     return
 
     if (not catalog is None and len(catalog)>0):
         np.random.shuffle(catalog)
@@ -441,15 +466,15 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     ###Now support any provided number of offset stars
     ref_pix = []
     for i in range(num_offset_stars):
-        ref_pix += [wcs.wcs_world2pix(np.array([[catalog["ra"][i], catalog["dec"][i]]], np.float_), 1)]
+        ref_pix += [wcs.wcs_world2pix(np.array([[catalog["ra"][i], catalog["dec"][i]]], np.float64), 1)]
 
     ###Get pixel coordinates of the target
-    target_pix = wcs.wcs_world2pix([(np.array([ra,dec], np.float_))], 1)
+    target_pix = wcs.wcs_world2pix([(np.array([ra,dec], np.float64))], 1)
 
     ###Get pixel coordinates of the host (if not None)
     # print(host_ra, host_dec)
     if (host_ra is not None) and (host_dec is not None):
-        host_pix = wcs.wcs_world2pix([(np.array([host_ra,host_dec], np.float_))], 1)
+        host_pix = wcs.wcs_world2pix([(np.array([host_ra,host_dec], np.float64))], 1)
 
     # Plot finder chart
 
