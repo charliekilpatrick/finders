@@ -47,7 +47,7 @@ def panstamps_lite(self, name='finder_field.fits'):
             os.remove( name )
         except OSError:
             pass
-        print 'Downloading image.'
+        print('Downloading image.')
         for s in stackFitsUrls:
             s = s.replace('plpsipp1v.stsci.edu//','')
             #if not os.path.dirname(name):
@@ -72,7 +72,7 @@ def get_decam_image(self, name='finder_field.fits'):
         #url = "http://legacysurvey.org/viewer/fits-cutout?ra=%.8f&dec=%.8f"%(self.ra, self.dec) +\
         #      "&size=500""&layer=decals-dr7&pixscale=0.27&bands=g" #%(size)
         #http://legacysurvey.org/viewer/jpeg-cutout?ra=343.9877625&dec=-43.4386083&size=100&layer=dr8&pixscale=0.3&bands=grz
-        print 'Downloading image.'
+        print('Downloading image.')
         try:
             os.remove( name )
         except OSError:

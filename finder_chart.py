@@ -2,15 +2,10 @@
 ##Modified by Kaew Tinyanont
 from __future__ import print_function
 
-try:
-    # For Python 3.0 and later
-    from urllib.request import urlopen
-    from urllib.request import urlretrieve
-    from urllib import request
-except ImportError:
-    # Fall back to Python 2's urllib2
-    from urllib2 import urlopen
-    from urllib import urlretrieve
+# For Python 3.0 and later
+from urllib.request import urlopen
+from urllib.request import urlretrieve
+from urllib import request
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
@@ -197,8 +192,8 @@ def get_fits_image(ra, dec, rad, debug=False):
 
             image_url = "http://ps1images.stsci.edu/cgi-bin/fitscut.cgi?red={0}&format=fits&size={1}&ra={2}&dec={3}".format(f, int(np.round(rad*3600*4, 0)), ra, dec)
             if (debug):
-                print ("URL:", image_url)
-                print ("Downloading PS1 r-band image...")
+                print("URL:", image_url)
+                print("Downloading PS1 r-band image...")
 
             #Store the object to a fits file.
             urlretrieve(image_url, '/tmp/tmp.fits')
@@ -222,7 +217,7 @@ def get_fits_image(ra, dec, rad, debug=False):
         try:
             image_url = 'http://archive.eso.org/dss/dss/image?ra=%.5f&dec=%.5f&x=%.2f&y=%.2f&Sky-Survey=DSS1&mime-type=download-fits' % \
                 ((ra), (dec), (rad*60), (rad*60))
-            if debug: print ("Downloading DSS image...")
+            if debug: print("Downloading DSS image...")
             urlretrieve(image_url, '/tmp/tmp.fits')
         except:
             image_url = 'http://archive.stsci.edu/cgi-bin/dss_search?ra=%.6f&dec=%.6f&generation=DSS2r&equinox=J2000&height=%.4f&width=%.4f&format=FITS' % \
@@ -233,7 +228,7 @@ def get_fits_image(ra, dec, rad, debug=False):
         try:
             fits.open("/tmp/tmp.fits")
         except IOError:
-            print ("Your fits image could not be retrieved.")
+            print("Your fits image could not be retrieved.")
             return None
 
 
@@ -251,7 +246,7 @@ def get_cutout(ra, dec, name, rad, debug=True):
     catalog = query_ps1_catalogue(ra, dec, rad, debug = debug)
 
     if (debug):
-        print (catalog)
+        print(catalog)
 
 
     # Construct URL to download DSS image cutout, and save to tmp.fits
@@ -271,8 +266,8 @@ def get_cutout(ra, dec, name, rad, debug=True):
     (ix_red["filename"], ix_green["filename"], ix_blue["filename"], rad*3600*4, ra, dec)
 
     if (debug):
-        print (image_url)
-        print ("Downloading PS1 r-band image...")
+        print(image_url)
+        print("Downloading PS1 r-band image...")
     urlretrieve(image_url, '/tmp/tmp_%s.jpg'%name)
 
 def get_host_PA_and_sep(ra, dec, host_ra, host_dec):
@@ -382,11 +377,11 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
 
     if (debug):
         print("Catalog returned by the function.")
-        print (catalog)
+        print(catalog)
 
 
     if (len(catalog)==0):
-        if debug: print ("Looking for a bit fainter stars up to mag: %.2f"%(maxmag+0.5))
+        if debug: print("Looking for a bit fainter stars up to mag: %.2f"%(maxmag+0.5))
         catalog = query_ps1_catalogue(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag+0.5)
 
     if (not catalog is None and len(catalog)>0):
@@ -406,7 +401,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     catalog = catalog[no_self_object]
     if (debug):
         print('After removing stars too close.')
-        print (catalog)
+        print(catalog)
     ###########Reject stars that are too far
     if max_separation is not None:
         # not_too_far = (np.abs(catalog["ra"]-ra)*np.cos(np.deg2rad(dec))<max_separation/3600)*(np.abs(catalog["dec"]-dec)<max_separation/3600)
@@ -418,9 +413,9 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
 
         if (debug):
             print('After removing stars too far.')
-            print (catalog)
+            print(catalog)
 
-    ###########Print warning if too few stars, set the number of offset stars to length of catalog
+    ###########printwarning if too few stars, set the number of offset stars to length of catalog
     if num_offset_stars >= 4:
         print("Do you really need this many stars? If n < 7 you should be fine...")
     if len(catalog) <= num_offset_stars:
@@ -432,13 +427,13 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     if len(catalog) >1:
         catalog.sort(order='mag')
 
-    if (debug): print (catalog)
+    if (debug): print(catalog)
 
     ###########Get FITS image of the FoV from DSS
     image_file = get_fits_image(ra, dec, rad, debug=debug)
 
     if image_file is None:
-        print ("FATAL ERROR! Your FITS image could not be retrieved.")
+        print("FATAL ERROR! Your FITS image could not be retrieved.")
         return
 
     image = fits.open(image_file)
@@ -597,16 +592,16 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     # # Save to pdf
     if output_format == 'pdf':
         pylab.savefig(os.path.join(directory, str(name+'_finder.pdf')), bbox_inches = 'tight')
-        if debug: print ("Saved to %s"%os.path.join(directory, str(name+'_finder.pdf')))
+        if debug: print("Saved to %s"%os.path.join(directory, str(name+'_finder.pdf')))
     # pylab.close("all")
     # Save to png
     if output_format == 'png':
         pylab.savefig(os.path.join(directory, str(name+'_finder.png')), bbox_inches = 'tight', dpi = 150)
-        if debug: print ("Saved to %s"%os.path.join(directory, str(name+'_finder.png')))
+        if debug: print("Saved to %s"%os.path.join(directory, str(name+'_finder.png')))
 
     pylab.close("all")
     
-    #Print starlist
+    #printstarlist
     if telescope == "Keck":
         commentchar = "#"
         separator = ""
@@ -615,14 +610,14 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         separator = "!"
         
     # if (len(catalog)>0 and (print_starlist or not starlist is None)):
-    #     print ( "{0} {2} {3}  2000.0 {1} ".format(name.ljust(20), commentchar, *deg2hour(ra, dec, sep=" ") ) )
+    #     print( "{0} {2} {3}  2000.0 {1} ".format(name.ljust(20), commentchar, *deg2hour(ra, dec, sep=" ") ) )
     #     S1 = deg2hour(catalog["ra"][0], catalog["dec"][0], sep=" ")
-    #     print ( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S1").ljust(20), S1[0], S1[1], separator, ofR1[0], ofR1[1], catalog["mag"][0], commentchar))
+    #     print( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S1").ljust(20), S1[0], S1[1], separator, ofR1[0], ofR1[1], catalog["mag"][0], commentchar))
     
     # if (len(catalog)>1 and (print_starlist or not starlist is None)):
     #     S2 = deg2hour(catalog["ra"][1], catalog["dec"][1], sep=" ")
-    #     print ( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S2").ljust(20), S2[0], S2[1], separator, ofR2[0], ofR2[1], catalog["mag"][1], commentchar))
-    ######Print offset stars to a starlist file
+    #     print( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S2").ljust(20), S2[0], S2[1], separator, ofR2[0], ofR2[1], catalog["mag"][1], commentchar))
+    ######printoffset stars to a starlist file
     #If no magnitude was supplied, just do not put it on the chart.
     if not np.isnan(mag):
         rmag = "r=%.2f"%mag
@@ -633,17 +628,17 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     if print_starlist:
         #Target if no host
         if (host_ra is None) and (host_dec is None):
-            print ( "{:s}{:s} {:s}  2000.0  {:s} {:s}".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), commentchar, rmag ) )
+            print( "{:s}{:s} {:s}  2000.0  {:s} {:s}".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), commentchar, rmag ) )
         else:
-            print ( "{:s}{:s} {:s}  2000.0  rotmode=pa rotdest={:.2f} {:s} {:s".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), host_pa, commentchar, rmag ) )
+            print( "{:s}{:s} {:s}  2000.0  rotmode=pa rotdest={:.2f} {:s} {:s".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), host_pa, commentchar, rmag ) )
         #offset stars
         for i in range(num_offset_stars):
             S = deg2hour(catalog["ra"][i], catalog["dec"][i], sep=" ")
             ofR = get_offset(catalog["ra"][i], catalog["dec"][i], ra, dec)
             if (host_ra is None) and (host_dec is None):
-                print ( "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} {:s} r={:.1f} ".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], commentchar, catalog["mag"][i]))
+                print( "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} {:s} r={:.1f} ".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], commentchar, catalog["mag"][i]))
             else:
-                print ( "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} rotmode=pa rotdest={:.2f} {:s} r={:.1f} ".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], host_pa, commentchar, catalog["mag"][i]))
+                print( "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} rotmode=pa rotdest={:.2f} {:s} r={:.1f} ".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], host_pa, commentchar, catalog["mag"][i]))
     if return_starlist == True:
         if (host_ra is None) and (host_dec is None):
             starlist_str = "{:s}{:s} {:s}  2000.0  {:s} {:s}\n".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), commentchar, rmag )
@@ -718,7 +713,7 @@ if __name__ == '__main__':
         
     #Check if correct number of arguments are given
     if len(sys.argv) < 4:
-        print ("Usage: finder_chart.py <RA> <Dec> <Name>  <rad [deg]> <telescope [P200|Keck]>")
+        print("Usage: finder_chart.py <RA> <Dec> <Name>  <rad [deg]> <telescope [P200|Keck]>")
         sys.exit()
      
     ra=sys.argv[1]
@@ -727,19 +722,19 @@ if __name__ == '__main__':
     if (len(sys.argv)>=5):
         rad = float(sys.argv[4])
         if (rad > 30./60):
-            print ('Search radius larger than 30 arcmin. Not sure why you need such a large finder chart... reducing to 10 armin for smoother operations...')
+            print('Search radius larger than 30 arcmin. Not sure why you need such a large finder chart... reducing to 10 armin for smoother operations...')
             rad = 10./60
     else:
         rad = 2./60
         
-    print ('Using search radius of %.1f arcsec.'%(rad*3600))
+    print('Using search radius of %.1f arcsec.'%(rad*3600))
 
         
     if (len(sys.argv)>5):
         telescope = sys.argv[5]
     else:
         telescope = "Keck"
-        print ('Assuming that the telescope you observe will be Keck. If it is "P200", please specify otherwise.')
+        print('Assuming that the telescope you observe will be Keck. If it is "P200", please specify otherwise.')
 
     if (len(sys.argv)>6):
         num_offset_stars = int(sys.argv[6])

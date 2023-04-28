@@ -49,19 +49,19 @@ def is_number(num):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=\
-        '''
-        Creates the finder charts for the whole night, provided a target list file.
+    '''
+    Creates the finder charts for the whole night, provided a target list file.
 
-        Usage: prepare_obs_run.py target_list_filename telescope
+    Usage: prepare_obs_run.py target_list_filename telescope
 
-        ''', formatter_class=argparse.RawTextHelpFormatter)
+    ''', formatter_class=argparse.RawTextHelpFormatter)
 
     # parser = argparse.ArgumentParser()
     parser.add_argument("filename", type=str,
                         help="filename of the target list")
 
     parser.add_argument("telescope", type = str,
-                        help="Keck or Lick")
+                        help="Keck, Lick, or SOAR")
 
     parser.add_argument("-r", "--rotate", action="store_true",
                         help="produce rotated finder chart")
@@ -69,16 +69,16 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", action="store_true",
                     help="debug mode")
 
-    parser.add_argument("-m", "--max-offset-star-radius", type=float, default=None,
-        help="Maximum offset star radius in arcsec")
+    parser.add_argument("-m", "--max-offset-star-radius", type=float, 
+        default=None, help="Maximum offset star radius in arcsec")
+
     parser.add_argument("--max-mag", type=float, default=None,
         help="Maximum offset star magnitude")
 
     args = parser.parse_args()
     filename = args.filename
 
-    table = Table.read(filename, format='ascii',
-        names=('name','ra','dec', 'mag'))
+    table = asci.read(filename, names=('name','ra','dec','mag'))
 
     coords = np.array([parse_coord(r['ra'], r['dec']) for r in table])
     names = np.array(table['name'].data)
@@ -123,8 +123,13 @@ if __name__ == '__main__':
                 max_separation = 3*60 #3 arcmin, Kast
                 min_mag = 5
                 max_mag = 18
+            elif args.telescope == 'SOAR':
+                finder_size = 5/60 #5 arcmin, SOAR
+                max_separation = 3*60 #3 arcmin, SOAR
+                min_mag = 8
+                max_mag = 19.5
             else:
-                print("Telescope should be eihter Keck or Lick; default to Lick.")
+                print("Telescope should be Keck, Lick or SOAR; default=Lick.")
                 finder_size = 4/60 #4 arcmin, Kast
                 max_separation = 3*60 #3 arcmin, Kast
                 min_mag = 11
@@ -135,25 +140,32 @@ if __name__ == '__main__':
             #Obtain PA and separation from target ra/dec and host ra/dec
             #To do: make it not duplicate for the "get_finder" function.
             if (host_ra is not None) and (host_dec is not None):
-                host_pa, host_sep = get_host_PA_and_sep(ra_deg, dec_deg, host_ra, host_dec)
+                host_pa, host_sep = get_host_PA_and_sep(ra_deg, dec_deg, 
+                    host_ra, host_dec)
                 pa_offset = 30 #30 degree offset in slit viewing camera PA
 
-            starlist_entry = get_finder( ra_deg, dec_deg, name,  finder_size, mag = mag,
-                            minmag=min_mag, maxmag=max_mag,
+            starlist_entry = get_finder( ra_deg, dec_deg, name,  finder_size,
+                            mag=mag, minmag=min_mag, maxmag=max_mag,
                             num_offset_stars = 3, min_separation = 15,
                             max_separation = None,\
                             host_ra = host_ra, host_dec = host_dec,
                             directory = 'finders',
-                            starlist=None, print_starlist = False,  return_starlist = True, debug = args.debug, output_format='png')
+                            starlist=None, print_starlist=False, 
+                            return_starlist = True, debug=args.debug, 
+                            output_format='png')
             print(starlist_entry)
             all_starlist += starlist_entry
-            ###If requesting rotated finder chart
-            if args.rotate and ((host_ra is not None) and (host_dec is not None)):
+            ### rotated finder chart
+            if args.rotate and ((host_ra is not None) and 
+                (host_dec is not None)):
                 print("Make rotated finder chart using PA + 30 deg for LRIS.")
                 try:
                     finder_name = name+'_finder.png'
                     rotated_finder = name+'_finder_rot.png'
-                    os.system('convert %s -virtual-pixel white +distort SRT %.2f %s'%(finder_name, host_pa+pa_offset, rotated_finder))
+                    off='%.2f'%(host_pa+pa_offset)
+                    m=f'convert {finder_name} -virtual-pixel white +distort '
+                    m+=f'SRT {off} {rotated_finder}'
+                    os.system(m)
                 except:
                     print("Check if imagemagick is installed.")
         elif skip_host == True: #In this case, the next item should be a target
