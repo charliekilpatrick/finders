@@ -4,7 +4,7 @@ Finder-generation code, originally developed by Kaew Tinyanont and extended by C
 
 Usage: python prepare_obs_run.py filename telescope
 
-Filename is your target list and must be formatted with four columns with name, ra, dec, magnitude.  See example_input.txt for an example input file formatted so the code can parse.
+Filename is your target list and must be formatted with four columns with name, ra, dec, magnitude.  See target_list.txt for an example input file formatted so the code can parse.
 
 Telescope can be Keck, Lick, or SOAR.
 
