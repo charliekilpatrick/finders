@@ -1,0 +1,317 @@
+<HTML>
+<HEAD>
+<TITLE>SOAR-4m Observing Run:  Observing Plan</TITLE>
+</HEAD>
+
+<BODY>
+
+<H2>Observing Plan</H2>
+
+<B><I>
+See also the 2017 Goodman Spectrograph Step-by-Step User's Guide 
+    (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/Goodman_Tutorial_2017.pdf>web version</A>,  
+     <A HREF=./Goodman_Tutorial_2017.pdf>local version</A>)
+</I></B>
+
+<P>
+  
+<H3>A Preferred Setup for 2019A Runs</H3>
+
+This is a preferred setup, but, if the main program is using a roughly similar setup (particularly, using the 400 or 600l/mm grating with either the Blue or the Red Camera), it saves a lot of time just to use the main program's setup and calibrations (focus, dome flats, biases, comparison arcs, and even Hamuy tertiary standard stars).
+
+<pre>
+  ----------------------------------------------------------------------------------------------------------
+  
+  Camera:        Blue Camera
+  
+  CCD ROI Mode:  Spectroscopic, 2x2
+                 (Binning 1x1 instead of 2x2 is another possibility)
+  
+  CCD Read:      200kHz ATTN 2
+
+  Mask:          1.0-arcsec slit 
+
+  Grating:       400lines/mm ("SYZY_400")
+
+  Set Mode:      400_WD (400lines/mm, set for c. 3500A-7500A, and scattered light feature moved to c. 3600A)
+                 (400_M1 is another possible preferred Set Mode)
+
+  ----------------------------------------------------------------------------------------------------------
+</pre>
+						     
+<H3> Remote Observing From FNAL </H3>
+<b><i>See also <A HREF=https://docs.google.com/document/d/1GT4qqnBWrycDa3hsiRCXYAEHA0RdDQjJ-oFvDxPOJec/edit#heading=h.cfhdub4lvrzk>Remote Observing from FNAL (DECam-specific)</A></i></b>
+<OL>
+  <LI> Start up Polycom to SOAR control room:
+    <UL>
+      <LI> Polycom address:  139.229.10.68
+    </UL>
+    <P>
+  <LI> Login to decam-cr-01, decam-cr-02, and decam-cr-03:
+    <UL>
+      <LI> observer, then your kerberos credentials
+    </UL>
+    <P>
+  <LI> Start up SOAR vpnc on a terminal on decam-cr-01, decam-cr-02, and decam-cr-03:
+    <UL>
+      <LI> <pre>vpnc /etc/vpnc/vpn2soar.conf</pre>
+    </UL>
+  <LI> Start vncviewers on a terminal on decam-cr-01 (or a combination of decam-cr-01 and decam-cr-02):
+    <UL>
+      <LI> Goodman:  <pre>vncviewer -Shared 139.229.15.132 &</pre>
+      <LI> IRAF:     <pre>vncviewer -Shared 139.229.15.137:4 &</pre> 
+      <LI> GACAM:    <pre>vncviewer -Shared 139.229.15.168:1 &</pre> 
+    </UL>
+  <LI> Start up SOAR "Quick Reduce" Jupyter notebook on decam-cr-03 (can also work on decam-cr-01 or decam-cr-02):
+    <OL>
+      <LI> Open up webbrowser (e.g., FireFox), if not already open.
+      <LI> Open up a new terminal window).
+      <LI> <pre>cd /homelocal/observer/shared/SOAR4m</pre>
+      <LI> Run the SOAR-QR setup script, providing the name of the night (e.g., "2019-03-21") as an argument:
+	<UL>
+	  <LI> <pre>source soar_qr_setup.sh 2019-03-21</pre>
+	  <LI> Note:  it may take 15 seconds or so for the jupyter tab to open up in the webbrowser.
+	</UL>
+      <LI> In the juptyer tab, click on the "notebooks" directory.
+      <LI> In the juptyer tab, click on "SOAR_Goodman_QR_Notebook.ipynb".
+      <LI> Follow the directions contained within the SOAR-QR juptyer notebook.
+      <LI> In particular, you will need to edit and keep current the contents of Section 2.b. ("User Inputs"/"Change Often (Nightly or Per Target)") of the juptyer notebook.
+      <LI> Remember:  to run a "cell" in a jupyter notebook, click on the "cell" and then hit "Shift-Enter" on the keyboard.
+      <LI> Ideally, you will rsync data from soaric7 (see below) to the SOAR_QR_RunDir data subdirectory for that night (e.g., for 2019-03-21): <pre>/homelocal/observer/shared/SOAR4m/SOAR_QR_RunDir/2019-03-21/data</pre>
+    </OL>
+  <LI> Observe!  (for details, see below.)
+    <P>
+  <LI> Copy data from:
+    <UL>
+      <LI>observer@soaric7.ctio.noao.edu:/home3/observer/today (during observations), or
+      <LI>observer@soaric7.ctio.noao.edu:/home3/observer/GOODMAN_DATA/NOAO/YYYY-MM-DD, where YYYY-MM-DD is the date (after the end-of-night data transfer)
+    </UL>
+    <P>
+  <LI> At end of the night:
+    <UL>
+      <LI> Close vncviewers (just click close on windows)
+      <LI> Stop SOAR vnpc: <pre>vpnc-disconnect</pre>
+      <LI> Close the SOAR_QR jupyter notebook:
+	<OL>
+	  <LI> Go to terminal window where you originally ran the source soar_qr_setup.sh command, and hit "CNTRL-C".
+	  <LI> Reply "y" to the question "Shutdown this notebook server (y/[n])?"
+	</OL>
+      <LI> Log out of (or lock screen for) decam-cr-01, decam-cr-02, and decam-03. 
+    </UL>
+</OL>
+  
+<H3> Instrumental Calibration Check List </H3>
+
+<i>These are usually done in the afternoon for the main program.  If we are using the same configuration as the night's main program, there is no need to repeat them.</i>
+
+<OL>
+
+<LI> Check central wavelength of setup by taking a test image of a Comparison Lamp
+
+<LI> Do Focus Sequence
+     <UL>
+       <LI> This will often be done by the SOAR instrument scientist or another SOAR staff member at about 4PM La Serena time each afternoon.  
+       <LI> If doing it yourself, basically follow the instructions on slides 64-74 of the 2017 Goodman Spectrograph Step-by-Step User's Guide 
+	 (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/Goodman_Tutorial_2017.pdf>web version</A>)
+         <A HREF=./Goodman_Tutorial_2017.pdf>local version</A>).
+	 <UL>
+	   <LI> Note that the Step-by-Step User's Guide shows the case of taking a focus for the 600l/mm grating.  The process is the same for the 400l/mm grating.
+	   <LI> Note that there is now a "Focus" tab in the Image Acquisition Control part of the Goodman GUI.  This automates the process of varying the camera focus and taking the focus sequence.
+	   <LI> Note that the Step-by-Step User's Guide suggests a focus step size of 300 (see Slide 70 of the Step-by-Step Guide); we recommend using a step size of 100.
+	 </UL>
+     </UL>
+
+<LI> After the focus sequence, adjust the Goodman configuration (slit size, CCD ROI mode, etc.) to the values you want for your targets (e.g., as in "A Preferred Setup for 2019A Runs" above).
+	<UL>
+	  <LI> To ensure grating is well settled, switch between your chosen set mode (e.g., "400_WD" mode), a default mode, and "grating out" a couple times (watch spectrograph image to check whether camera moves).
+
+	  <LI> To ensure slitmask is well settled, withdraw and engage 1.0-arcsec slitmask a couple times, as well. 
+
+	</UL>
+
+<LI> Do WaveCal
+     <UL>
+     <LI> Lamps:  HgAr + Ne
+     <LI> Exp time: 0.5sec
+     <LI> Number:  5 in the afternoon (and 5 after every target throughout the night)
+       <UL>
+	 <LI> It takes about a minute for the lamps to warm up sufficiently; so might as well do a sequence of 5 and choose the 5th of each sequence for use in wavelength calibration.
+       </UL>
+     <LI> Be sure to ask telescope operator if lamp is on before proceeding with the exposure.
+     </UL>
+
+<LI> Do Dome Flats (replaces doing internal quartz lamp flats)
+     <UL>
+     <LI> Intensity:  100 percent 
+     <LI> Exposure Time:  7 sec
+     <LI> Number:  50
+     <LI> Be sure to ask telescope operator if lamp is on before proceeding with the exposure.
+     </UL>
+
+<LI> Do Biases
+     <UL>
+     <LI> Number:  50
+     </UL>
+
+<LI> Turn on Flexure Compensation
+
+</OL>
+
+<H3> Start of Night Check List </H3>
+
+<UL>
+  <LI> <b><i>Inform the Telescope Operator that, unless otherwise specified, we want to use the Parallactic Angle for all our targets. </i></b>
+  <LI> Observe a <A HREF=./Targets/StdStars/StdStars.html>Spectrophotometric Standard Star<A> (follow the steps for "Science Targets" in the next section, taking 3 spectroscopic exposures for the standard star and obtaining a sequence of 5 HgAr+Ne comparison lamp wavecals at the same sky position immediately following those 3 standard star spectroscopic exposures)
+</UL>
+
+
+<H3> During Night Check List</H3>
+
+<b><i><u>Science Targets</u></i></b>
+
+<P>
+
+For targets brighter than i=19 or so, Steps 1-3 below should be replaced by using the GACAM to acquire the target.  Here is the info for using the GACAM:
+<UL>
+<LI> Goodman Acquistion Camera (GACAM) Users's Manual
+     (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/AcqCam_User_Guide_Dec2015.pdf>web version</A>, 
+     <A HREF=./AcqCam_User_Guide_Dec2015.pdf>local version</A>)
+     <UL>
+     <LI> Goodman Acquistion Camera (GACAM) Cheat Sheet
+          (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/AcqCam_Cheat_Sheet_Dec2015.pdf>web version</A>, 
+       <A HREF=./AcqCam_Cheat_Sheet_Dec2015.pdf>local version</A>)
+     <LI> <b>Don't forget to move the Goodman's mask <i>IN</i> and the GACAM's arm <i>OUT</i> before taking a target's spectrum!</b>
+     </UL>
+</UL>
+
+
+<P>
+  Here is a check list, in PDF format, for the actions described below:  <A HREF=./OldSchoolTargetAcqForm.pdf>OldSchoolTargetAcqForm.pdf</A>.
+  It is helpful to print out a copy for each target fainter than i=19 or so.  
+<P>
+  The following steps are also described in detail on slides 30-43 of the 2017 Goodman Spectrograph Step-by-Step User's Guide 
+  (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/Goodman_Tutorial_2017.pdf>web version</A>)
+  <A HREF=./Goodman_Tutorial_2017.pdf>local version</A>).
+<P>
+  (Note:  the following steps <i>are</i> kind of painful and time-consuming; so, if want,
+  you can try to push the GACAM method described above to fainter magnitudes by increasing
+  the GACAM's exposure time (up to 40 sec = 40,000 milli-sec is do-able.))
+<P>
+  
+<OL> 
+<LI> Take acquisition image of the field:
+     <OL>
+     <LI> Mask out
+     <LI> Grating out
+     <LI> Take one 5-sec image of the target object (1 sec for standard stars) 
+     <LI> Within IRAF:
+          <OL>
+          <LI> display <i>filename</i> 1
+          <LI> In ds9 Pan Zoom window, take Position Angle from Goodman GIU and insert into Rotate box
+          <LI> Using a finding chart (e.g., from SkyView, SDSS, or DES) identify target in ds9 window
+          <LI> Highlight target in ds9 window with cursor and hit "a" within imexam.
+          <LI> Record values of COL, LINE from imexam to "Current Pixel Values" for X and Y, respectively, in Goodman GUI
+          <LI> Change value back to 0 in Rotate box in ds9 Pan Zoom Window and Apply
+          <LI> "q" out of imexam
+          </OL>
+     </OL>
+
+<LI> Take acquisition image of the slit:
+     <OL>
+     <LI> Mask in (for efficiency, you might do this before running the above IRAF step above, since moving the mask takes about 20 sec)
+     <LI> Take a 5-sec image of the slit (1 sec for standard stars)
+     <LI> Within IRAF:
+          <OL>
+          <LI> display <i>filename</i> 1
+          <LI> In the ds9 window, highlight with the cursor the line (e.g., line 474) on the image of the slit where you want the object to sit and hit "j" within imexam.
+          </OL>
+     <LI> Record value of the fitted CENTER from imexam plot to "Desired Pixel Values" for X. and Y, respectively, in Goodman GUI.  For the Desired Y value, input the line on the slit where you want the object to sit (e.g., "474").
+     <LI> Click yellow "Calculate Required Offset"				
+     <LI> Announce to Telescope Operator that you are about to "Apply Offset"
+     <LI> Click purple "Apply SOAR Offset"
+          <LI> Wait until Telescope Operator indicates the offset has been applied.
+          <LI> "q" out of imexam
+     </OL>
+
+<LI> Take acquisition of target (hopefully!) in slit:
+     <OL>
+     <LI>Take a 5-sec image of the target in the slit (1 sec for standard stars)
+     <LI> Within IRAF:
+          <OL>
+          <LI> display <i>filename</i> 1 zs- zr- z1=700 z2=4000 
+          <LI> in the ds9 window, at the line (e.g., line 474) on the image of the slit where you want the object to sit, hit "j" within imexam at these positions:
+               <OL>
+               <LI> just above the target
+               <LI> on the target
+               <LI> just below the target
+               </OL>
+          </OL>
+     </OL>
+
+<LI> Finally, take a test spectrum of target in slit:
+     <OL>
+     <LI>Grating in (or, if using GACAM:  <b><i>MASK IN</i></b> and <b><i>ARM OUT</i></b>)
+     <LI>Take an N-second exposure, where N is equal to one-third the total exposure time you would like to spend on this target.  (Taking 3 exposures helps for cosmic ray removal during processing.)
+     <LI> Within IRAF:
+          <OL>
+          <LI> display <i>filename</i> 1
+          <LI> implot <i>filename</i>  (use "c" to set a particular column of the spectrum to view, then use "w" and "e" and "e" to define a window to set the aperture, and then ":l <i>line_lo</i> <i>line_hi</i>" to extract the raw spectrum; typically, <i>line_lo</i> will be about 5 lines smaller than the center line [e.g., "474-5"] and <i>line_hi</i> will be about 5 lines larger than the center line [e.g., "474+5"].  
+          </OL>
+     <LI>Alternatively to using display/implot to check out the raw spectrum, use <A HREF=https://github.com/DouglasLeeTucker/SOAR_Goodman_QuickReduce>the SOAR Goodman Quick Reduce</A> (installed on decam-cr-03.fnal.gov) to display a quick-and-dirty wavelength- and spectrophotometrically calibrated spectrum:
+          <OL>
+            <LI> Copy the raw spectrum from soaric7; e.g.:  <pre>rsync -avz observer@soaric7.ctio.noao.edu:/home3/observer/today/0127_gwc_0013.fits .</pre>
+	    <LI> Update the User Inputs section of the jupyter notebook, pointing to the location on disk of the raw spectrum copied from soaric7.
+            <LI> Run the jupyter notebook.
+	  </OL>	 
+     </OL>
+
+<LI> If the test spectrum does <i><b>not</b></i> look interesting (i.e., you don't really care about this target after seeing an initial spectrum), move on to the next target without bothering to take additional spectra of this target or a HgAr + Ne comparison lamp wavecal at this sky position (i.e., skip the next two steps).
+
+<LI> If the test spectrum <i><b>does</b></i> look interesting, take 2 more N-second exposures of the target.
+
+<LI> After taking the 2 additional N-second exposures of the target, take a sequence of 5 HgAr + Ne comparison lamp wavecal exposures at the same sky position as the target.
+     <UL>
+     <LI> Lamps:  HgAr + Ne
+     <LI> Exp time: 0.3sec
+       <UL>
+	 <LI> Actual exposure time may vary depending on the Goodman setup; this is suitiable for the setup described above in "A Preferred Setup for 2019A Runs".
+       </UL>
+     <LI> Number of exposures:  5
+     <LI> Be sure to ask telescope operator if lamp is on before proceeding with the exposure.
+     </UL>
+
+</OL>
+
+
+<H3> End of Night Check List </H3>
+
+<UL>
+
+  <LI> Follow the end-of-night instructions on slides 45-50 of the 2017 Goodman Spectrograph Step-by-Step User's Guide 
+    (<A HREF=http://www.ctio.noao.edu/soar/sites/default/files/GOODMAN/Goodman_Tutorial_2017.pdf>web version</A>,  
+     <A HREF=./Goodman_Tutorial_2017.pdf>local version</A>)
+  <LI> Fill out <A HREF=http://www.ctio.noao.edu/SOAR/Forms/EON/Form.php?telescope=SOAR>SOAR End-of-night form</A>.
+  <LI> If last night of run, fill out <A HREF=http://www.ctio.noao.edu/new/Tools/Forms/EOR/Form.php?telescope=SOAR>SOAR End-of-run form</A>
+  <LI> Copy night's data to Fermilab
+
+</UL>
+
+<H3> Tips </H3>
+<UL>
+<LI> To re-start Goodman GUI:
+     <OL>
+     <LI>Click on "UltraVNC Viewer" icon on the Windows Desktop
+     <LI>Enter appropriate password
+     </OL>
+</UL>
+
+<HR>
+
+<A HREF=./index.html>Return to Main Page</A>
+
+<HR>
+<EM>Last updated:  8 March 2019 </EM><BR>
+
+
+</BODY>
+</HTML>

@@ -590,12 +590,15 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         os.makedirs(directory)
 
     # # Save to pdf
+    outimagename = ''
     if output_format == 'pdf':
+        outimagename = os.path.join(directory, str(name+'_finder.pdf'))
         pylab.savefig(os.path.join(directory, str(name+'_finder.pdf')), bbox_inches = 'tight')
         if debug: print("Saved to %s"%os.path.join(directory, str(name+'_finder.pdf')))
     # pylab.close("all")
     # Save to png
     if output_format == 'png':
+        outimagename = os.path.join(directory, str(name+'_finder.png'))
         pylab.savefig(os.path.join(directory, str(name+'_finder.png')), bbox_inches = 'tight', dpi = 150)
         if debug: print("Saved to %s"%os.path.join(directory, str(name+'_finder.png')))
 
@@ -695,7 +698,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
             f.write('\n')     
 
     if return_starlist == True:
-        return starlist_str
+        return (starlist_str, outimagename)
 
 
 
