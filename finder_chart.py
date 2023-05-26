@@ -154,6 +154,259 @@ def query_ps1_catalogue(ra, dec, radius_deg, minmag=13, maxmag=18.0, debug = Fal
 
     return newcat
 
+######################MAST PS1 FUNCTIONS##########################
+#https://ps1images.stsci.edu/ps1_dr2_api.html
+def ps1cone(ra,dec,radius,table="mean",release="dr1",format="csv",columns=None,
+           baseurl="https://catalogs.mast.stsci.edu/api/v0.1/panstarrs", verbose=False,
+           **kw):
+    """Do a cone search of the PS1 catalog
+    
+    Parameters
+    ----------
+    ra (float): (degrees) J2000 Right Ascension
+    dec (float): (degrees) J2000 Declination
+    radius (float): (degrees) Search radius (<= 0.5 degrees)
+    table (string): mean, stack, or detection
+    release (string): dr1 or dr2
+    format: csv, votable, json
+    columns: list of column names to include (None means use defaults)
+    baseurl: base URL for the request
+    verbose: print info about request
+    **kw: other parameters (e.g., 'nDetections.min':2)
+    """
+    
+    data = kw.copy()
+    data['ra'] = ra
+    data['dec'] = dec
+    data['radius'] = radius
+    return ps1search(table=table,release=release,format=format,columns=columns,
+                    baseurl=baseurl, verbose=verbose, **data)
+
+
+def ps1search(table="mean",release="dr1",format="csv",columns=None,
+           baseurl="https://catalogs.mast.stsci.edu/api/v0.1/panstarrs", verbose=False,
+           **kw):
+    """Do a general search of the PS1 catalog (possibly without ra/dec/radius)
+    
+    Parameters
+    ----------
+    table (string): mean, stack, or detection
+    release (string): dr1 or dr2
+    format: csv, votable, json
+    columns: list of column names to include (None means use defaults)
+    baseurl: base URL for the request
+    verbose: print info about request
+    **kw: other parameters (e.g., 'nDetections.min':2).  Note this is required!
+    """
+    
+    data = kw.copy()
+    if not data:
+        raise ValueError("You must specify some parameters for search")
+    checklegal(table,release)
+    if format not in ("csv","votable","json"):
+        raise ValueError("Bad value for format")
+    url = "{baseurl}/{release}/{table}.{format}".format(**locals())
+    if columns:
+        # check that column values are legal
+        # create a dictionary to speed this up
+        dcols = {}
+        for col in ps1metadata(table,release)['name']:
+            dcols[col.lower()] = 1
+        badcols = []
+        for col in columns:
+            if col.lower().strip() not in dcols:
+                badcols.append(col)
+        if badcols:
+            raise ValueError('Some columns not found in table: {}'.format(', '.join(badcols)))
+        # two different ways to specify a list of column values in the API
+        # data['columns'] = columns
+        data['columns'] = '[{}]'.format(','.join(columns))
+
+# either get or post works
+#    r = requests.post(url, data=data)
+    r = requests.get(url, params=data)
+
+    if verbose:
+        print(r.url)
+    r.raise_for_status()
+    if format == "json":
+        return r.json()
+    else:
+        return r.text
+
+
+def checklegal(table,release):
+    """Checks if this combination of table and release is acceptable
+    
+    Raises a VelueError exception if there is problem
+    """
+    
+    releaselist = ("dr1", "dr2")
+    if release not in ("dr1","dr2"):
+        raise ValueError("Bad value for release (must be one of {})".format(', '.join(releaselist)))
+    if release=="dr1":
+        tablelist = ("mean", "stack")
+    else:
+        tablelist = ("mean", "stack", "detection")
+    if table not in tablelist:
+        raise ValueError("Bad value for table (for {} must be one of {})".format(release, ", ".join(tablelist)))
+
+
+def ps1metadata(table="mean",release="dr1",
+           baseurl="https://catalogs.mast.stsci.edu/api/v0.1/panstarrs"):
+    """Return metadata for the specified catalog and table
+    
+    Parameters
+    ----------
+    table (string): mean, stack, or detection
+    release (string): dr1 or dr2
+    baseurl: base URL for the request
+    
+    Returns an astropy table with columns name, type, description
+    """
+    
+    checklegal(table,release)
+    url = "{baseurl}/{release}/{table}/metadata".format(**locals())
+    r = requests.get(url)
+    r.raise_for_status()
+    v = r.json()
+    # convert to astropy table
+    tab = Table(rows=[(x['name'],x['type'],x['description']) for x in v],
+               names=('name','type','description'))
+    return tab
+
+
+def mastQuery(request):
+    """Perform a MAST query.
+
+    Parameters
+    ----------
+    request (dictionary): The MAST request json object
+
+    Returns head,content where head is the response HTTP headers, and content is the returned data
+    """
+    
+    server='mast.stsci.edu'
+
+    # Grab Python Version 
+    version = ".".join(map(str, sys.version_info[:3]))
+
+    # Create Http Header Variables
+    headers = {"Content-type": "application/x-www-form-urlencoded",
+               "Accept": "text/plain",
+               "User-agent":"python-requests/"+version}
+
+    # Encoding the request as a json string
+    requestString = json.dumps(request)
+    requestString = urlencode(requestString)
+    
+    # opening the https connection
+    conn = httplib.HTTPSConnection(server)
+
+    # Making the query
+    conn.request("POST", "/api/v0/invoke", "request="+requestString, headers)
+
+    # Getting the response
+    resp = conn.getresponse()
+    head = resp.getheaders()
+    content = resp.read().decode('utf-8')
+
+    # Close the https connection
+    conn.close()
+
+    return head,content
+
+
+def resolve(name):
+    """Get the RA and Dec for an object using the MAST name resolver
+    
+    Parameters
+    ----------
+    name (str): Name of object
+
+    Returns RA, Dec tuple with position"""
+
+    resolverRequest = {'service':'Mast.Name.Lookup',
+                       'params':{'input':name,
+                                 'format':'json'
+                                },
+                      }
+    headers,resolvedObjectString = mastQuery(resolverRequest)
+    resolvedObject = json.loads(resolvedObjectString)
+    # The resolver returns a variety of information about the resolved object, 
+    # however for our purposes all we need are the RA and Dec
+    try:
+        objRa = resolvedObject['resolvedCoordinate'][0]['ra']
+        objDec = resolvedObject['resolvedCoordinate'][0]['decl']
+    except IndexError as e:
+        raise ValueError("Unknown object '{}'".format(name))
+    return (objRa, objDec)
+
+##################################################################
+
+def query_ps1_new_mast(ra, dec, radius_deg, minmag=10, maxmag=18.5,debug = False):
+    """
+    This function has the same functionalities as query_ps1_catalogue, but uses the more modern astroquery 
+    """ 
+
+    # Read RA, Dec and magnitude from CSV 
+    # catalog = Table.read("/tmp/ps1_cat.csv", format="ascii.csv", header_start=1)
+    results = ps1cone(ra,dec,radius_deg,release='dr2',verbose=debug)
+    catalog = asci.read(results)
+    if debug:
+        print(catalog)
+
+    mask = (catalog["nDetections"]>4) * (catalog["rMeanPSFMag"] > minmag) * (catalog["rMeanPSFMag"] < maxmag) *\
+    (catalog["iMeanPSFMag"] - catalog["iMeanKronMag"] < 0.05) #This last one to select stars.
+    if debug: print(catalog["iMeanPSFMag"] - catalog["iMeanKronMag"])
+    # (catalog["iMeanPSFMag"] - catalog["iMeanKronMag"] < 0.05) #This last one to select stars.
+
+    
+    #*(catalog["rMeanPSFMag"] > minmag) * (catalog["rMeanPSFMag"] < maxmag) 
+    catalog = catalog[mask]
+
+    # print(catalog.colnames)
+    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float)])
+    newcat["ra"] = catalog["raMean"]
+    newcat["dec"] = catalog["decMean"]
+    newcat["mag"] = catalog["rMeanPSFMag"]
+    
+    return newcat
+            
+
+def get_host_PA_and_sep(ra, dec, host_ra, host_dec):
+    """
+    Takes the coordinates of the transient and the host and compute the PA and offset
+
+    Parameters
+    ----------
+    ra : float
+        RA of our target in degrees.
+    dec : float
+        DEC of our target in degrees.
+    host_ra : float
+        RA of the host galaxy in degrees.
+    host_dec : float
+        DEC of the host galaxy in degrees.
+    slit_length : float (optional) ---> Remove this for now. Observer should be able to judge
+        The length of the spectrograph's slit in arcsec. 
+        If offset > slit_length, warning is provided.
+    
+    Outputs:
+    --------
+    Return PA in degrees and separation between target and host in arcsec
+    """
+    
+    #Define SkyCoord object for target and host
+    transient_coord = SkyCoord(ra, dec, frame='icrs', unit='deg')
+    host_coord = SkyCoord(host_ra, host_dec, frame='icrs', unit='deg')
+    
+    #Compute separation and PA
+    pa = transient_coord.position_angle(host_coord)
+    sep = transient_coord.separation(host_coord)
+    
+    return pa.deg, sep.arcsec
+
 def get_skymapper_image(ra, dec, rad):
 
     url="http://skymappersiap.asvo.nci.org.au/dr1_cutout/query?POS=%.6f,%.6f&SIZE=%.3f&FORMAT=image/fits&INTERSECT=center&RESPONSEFORMAT=CSV"%(ra, dec, rad)
@@ -270,37 +523,6 @@ def get_cutout(ra, dec, name, rad, debug=True):
         print("Downloading PS1 r-band image...")
     urlretrieve(image_url, '/tmp/tmp_%s.jpg'%name)
 
-def get_host_PA_and_sep(ra, dec, host_ra, host_dec):
-    """
-    Takes the coordinates of the transient and the host and compute the PA and offset
-
-    Parameters
-    ----------
-    ra : float
-        RA of our target in degrees.
-    dec : float
-        DEC of our target in degrees.
-    host_ra : float
-        RA of the host galaxy in degrees.
-    host_dec : float
-        DEC of the host galaxy in degrees.
-    slit_length : float (optional) ---> Remove this for now. Observer should be able to judge
-        The length of the spectrograph's slit in arcsec.
-        If offset > slit_length, warning is provided.
-
-    Outputs:
-    --------
-    Return PA in degrees and separation between target and host in arcsec
-    """
-    #Define SkyCoord object for target and host
-    transient_coord = SkyCoord(ra, dec, frame='icrs', unit='deg')
-    host_coord = SkyCoord(host_ra, host_dec, frame='icrs', unit='deg')
-    #Compute separation and PA
-    pa = transient_coord.position_angle(host_coord)
-    sep = transient_coord.separation(host_coord)
-
-    return pa.deg, sep.arcsec
-
 
 def get_finder(ra, dec, name, rad, debug=False, starlist=None,
                 print_starlist=True,
@@ -388,7 +610,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         np.random.shuffle(catalog)
 
     ###########Reject stars that are too close
-    # no_self_object = (np.abs(catalog["ra"]-ra)*np.cos(np.deg2rad(dec))>min_separation/3600)*(np.abs(catalog["dec"]-dec)>min_separation/3600)
     offsets_stars = SkyCoord(catalog["ra"], catalog["dec"], unit = (u.deg, u.deg))
 
     #Define SkyCoord object for target and host
@@ -402,6 +623,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     if (debug):
         print('After removing stars too close.')
         print(catalog)
+    
     ###########Reject stars that are too far
     if max_separation is not None:
         # not_too_far = (np.abs(catalog["ra"]-ra)*np.cos(np.deg2rad(dec))<max_separation/3600)*(np.abs(catalog["dec"]-dec)<max_separation/3600)
@@ -441,22 +663,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     # Get pixel coordinates of SN, reference stars in DSS image
     wcs = astropy.wcs.WCS(image[0].header)
 
-    # if (len(catalog)>0):
-    #     #w = astropy.wcs.find_all_wcs(ps1_image[0].header, relax=True, keysel=None)[0]
-    #     ref1_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][0], catalog["dec"][0]]], np.float_), 1)
-    # if (len(catalog)>1):
-    #     ref2_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][1], catalog["dec"][1]]], np.float_), 1)
-    #     #ref3_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][2], catalog["dec"][2]]], np.float_), 1)
-
-    ###Get pixel coordinates of offset stars
-    ###Now support any provided number of offset stars
-    # if (len(catalog)>0):
-    #     #w = astropy.wcs.find_all_wcs(ps1_image[0].header, relax=True, keysel=None)[0]
-    #     ref1_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][0], catalog["dec"][0]]], np.float_), 1)
-    # if (len(catalog)>1):
-    #     ref2_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][1], catalog["dec"][1]]], np.float_), 1)
-    #     #ref3_pix = wcs.wcs_world2pix(np.array([[catalog["ra"][2], catalog["dec"][2]]], np.float_), 1)
-
     ###Get pixel coordinates of offset stars
     ###Now support any provided number of offset stars
     ref_pix = []
@@ -467,7 +673,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     target_pix = wcs.wcs_world2pix([(np.array([ra,dec], np.float64))], 1)
 
     ###Get pixel coordinates of the host (if not None)
-    # print(host_ra, host_dec)
     if (host_ra is not None) and (host_dec is not None):
         host_pix = wcs.wcs_world2pix([(np.array([host_ra,host_dec], np.float64))], 1)
 
@@ -477,9 +682,8 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     image[0].data[image[0].data>30000] = 30000
     image[0].data[np.isnan(image[0].data)] = 0
 
-    # plt.figure(figsize=(8,6))
     fig, ax = plt.subplots(1,1,figsize = (8,6), subplot_kw={'projection':wcs})
-    # ax.set_projection()
+
     plt.set_cmap('gray_r')
     smoothedimage = gaussian_filter(image[0].data, 1.3)
     ax.imshow(smoothedimage, origin='lower',vmin=np.percentile(image[0].data.flatten(), 10), \
@@ -492,7 +696,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         color='green')
 
     # Mark host, if applicable
-    # print(host_ra, host_dec)
     if (host_ra is not None) and (host_dec is not None):
         #Get pa and sep
         host_pa, host_sep = get_host_PA_and_sep(ra,dec, host_ra,host_dec)
@@ -502,16 +705,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         plt.plot([host_pix[0,0],(host_pix[0,0])],[host_pix[0,1]-10,(host_pix[0,1])-35], 'c-', lw=1)
         plt.annotate('Host', xy=(host_pix[0,0], host_pix[0,1]),  xycoords='data',xytext=(22,-3), textcoords='offset points', color = 'c')
 
-
-    # Mark and label reference stars
-    # if (len(catalog)>0):
-    #     plt.plot([ref1_pix[0,0]+15,(ref1_pix[0,0]+10)],[ref1_pix[0,1],(ref1_pix[0,1])], 'b-', lw=2)
-    #     plt.plot([ref1_pix[0,0],(ref1_pix[0,0])],[ref1_pix[0,1]+10,(ref1_pix[0,1])+15], 'b-', lw=2)
-    #     plt.annotate("R1", xy=(ref1_pix[0,0], ref1_pix[0,1]),  xycoords='data',xytext=(22,-3), textcoords='offset points', color="b")
-    # if (len(catalog)>1):
-    #     plt.plot([ref2_pix[0,0]+15,(ref2_pix[0,0]+10)],[ref2_pix[0,1],(ref2_pix[0,1])], 'r-', lw=2)
-    #     plt.plot([ref2_pix[0,0],(ref2_pix[0,0])],[ref2_pix[0,1]+10,(ref2_pix[0,1])+15], 'r-', lw=2)
-    #     plt.annotate("R2", xy=(ref2_pix[0,0], ref2_pix[0,1]),  xycoords='data',xytext=(22,-3), textcoords='offset points', color="r")
     cols = ["b","r","orange","m", "brown", "k", "c"]
     if num_offset_stars > 7:
         print("Why do you need so many offset stars!?")
@@ -537,8 +730,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     plt.annotate("E", xy=((image[0].data.shape[0])-40, 20),  xycoords='data',xytext=(-12,-5), textcoords='offset points')
 
     # Set axis tics (not implemented correctly yet)
-    # plt.tick_params(labelbottom='off')
-    # plt.tick_params(labelleft='off')
     ax.xaxis.set_major_locator(MaxNLocator(5))
     ax.yaxis.set_major_locator(MaxNLocator(5))
     ax.set_xlabel('%.1f\''%(rad*60))
@@ -549,31 +740,15 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
 
     # List name, coords, mag of references etc
     plt.text(1.02, 0.85, name+" mag=%.1f"%mag, transform=ax.transAxes, fontweight='bold')
-    #plt.text(1.02, 0.80, "mag=%.1f"%mag, transform=plt.axes().transAxes, fontweight='bold')
     plt.text(1.02, 0.80, "%.5f %.5f"%(ra, dec),transform=ax.transAxes)
+    
     rah, dech = deg2hour(ra, dec)
     plt.text(1.02, 0.75,rah+"  "+dech, transform=ax.transAxes)
+    
     #If host info is provided
     if (host_ra is not None) and (host_dec is not None):
         plt.text(1.02, 0.7, "Host PA = %.2f deg, Sep = %.2f\""%(host_pa, host_sep), transform=ax.transAxes)
 
-
-    #Put the text for the offset stars.
-    # if (len(catalog)>0):
-    #     ofR1 = get_offset(catalog["ra"][0], catalog["dec"][0], ra, dec)
-    #     S1 = deg2hour(catalog["ra"][0], catalog["dec"][0], sep=":")
-
-    #     plt.text(1.02, 0.60,'R1, mag=%.2f'%catalog["mag"][0], transform=plt.axes().transAxes, color="b")
-    #     plt.text(1.02, 0.55,'%s %s'%(S1[0], S1[1]), transform=plt.axes().transAxes, color="b")
-    #     plt.text(1.02, 0.5,"E: %.2f N: %.2f"%(ofR1[0], ofR1[1]),transform=plt.axes().transAxes, color="b")
-
-    # if (len(catalog)>1):
-    #     ofR2 = get_offset(catalog["ra"][1], catalog["dec"][1], ra, dec)
-    #     S2 = deg2hour(catalog["ra"][1], catalog["dec"][1], sep=":")
-
-    #     plt.text(1.02, 0.4,'R2, mag=%.2f'%catalog["mag"][1], transform=plt.axes().transAxes, color="r")
-    #     plt.text(1.02, 0.35,'%s %s'%(S2[0], S2[1]), transform=plt.axes().transAxes, color="r")
-    #     plt.text(1.02, 0.3,"E: %.2f N: %.2f"%(ofR2[0], ofR2[1]),transform=plt.axes().transAxes, color="r")
     for i in range(num_offset_stars):
         ofR = get_offset(catalog["ra"][i], catalog["dec"][i], ra, dec)
         S = deg2hour(catalog["ra"][i], catalog["dec"][i], sep=":")
@@ -595,7 +770,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         outimagename = os.path.join(directory, str(name+'_finder.pdf'))
         pylab.savefig(os.path.join(directory, str(name+'_finder.pdf')), bbox_inches = 'tight')
         if debug: print("Saved to %s"%os.path.join(directory, str(name+'_finder.pdf')))
-    # pylab.close("all")
+
     # Save to png
     if output_format == 'png':
         outimagename = os.path.join(directory, str(name+'_finder.png'))
@@ -604,7 +779,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
 
     pylab.close("all")
     
-    #printstarlist
     if telescope == "Keck":
         commentchar = "#"
         separator = ""
@@ -612,14 +786,6 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
         commentchar = "!"
         separator = "!"
         
-    # if (len(catalog)>0 and (print_starlist or not starlist is None)):
-    #     print( "{0} {2} {3}  2000.0 {1} ".format(name.ljust(20), commentchar, *deg2hour(ra, dec, sep=" ") ) )
-    #     S1 = deg2hour(catalog["ra"][0], catalog["dec"][0], sep=" ")
-    #     print( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S1").ljust(20), S1[0], S1[1], separator, ofR1[0], ofR1[1], catalog["mag"][0], commentchar))
-    
-    # if (len(catalog)>1 and (print_starlist or not starlist is None)):
-    #     S2 = deg2hour(catalog["ra"][1], catalog["dec"][1], sep=" ")
-    #     print( "{:s} {:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} r={:.1f} {:s} ".format( (name+"_S2").ljust(20), S2[0], S2[1], separator, ofR2[0], ofR2[1], catalog["mag"][1], commentchar))
     ######printoffset stars to a starlist file
     #If no magnitude was supplied, just do not put it on the chart.
     if not np.isnan(mag):
@@ -654,23 +820,10 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
                 starlist_str += "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} {:s} r={:.1f} \n".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], commentchar, catalog["mag"][i])
             else:
                 starlist_str += "{:s}{:s} {:s}  2000.0 {:s} raoffset={:.2f} decoffset={:.2f} rotmode=pa rotdest={:.2f} {:s} r={:.1f} \n".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], separator, ofR[0], ofR[1], host_pa, commentchar, catalog["mag"][i])
-
-    # print('get to after marking offset stars')
-    # print(starlist_str)
  
     #Write to the starlist if the name of the starlist was provided.
     if (not starlist is None) and (telescope =="Keck"):
         with open(starlist, "a") as f:
-            # f.write( "{0} {1} {2}  2000.0 #".format(name.ljust(16), *deg2hour(ra, dec, sep=" ")) + "%s \n"%rmag ) 
-            # # if (len(catalog)>0):
-            # #     f.write ( "{:s} {:s} {:s}  2000.0 raoffset={:.2f} decoffset={:.2f} r={:.1f} # \n".format( (name+"_S1").ljust(17), S1[0], S1[1], ofR1[0], ofR1[1], catalog["mag"][0]))
-            # # if (len(catalog)>1):
-            # #     f.write ( "{:s} {:s} {:s}  2000.0 raoffset={:.2f} decoffset={:.2f} r={:.1f} # \n".format( (name+"_S2").ljust(17), S2[0], S2[1], ofR2[0], ofR2[1], catalog["mag"][1]))
-            # for i in range(num_offset_stars):
-            #     S = deg2hour(catalog["ra"][i], catalog["dec"][i], sep=" ")
-            #     ofR = get_offset(catalog["ra"][i], catalog["dec"][i], ra, dec)
-            #     f.write ( "{:s} {:s} {:s}  2000.0 raoffset={:.2f} decoffset={:.2f} r={:.1f} # \n".format( (name+"_S%d"%(i+1)).ljust(16), S[0], S[1], ofR[0], ofR[1], catalog["mag"][i]))
-            # f.write('\n')
             if (host_ra is None) and (host_dec is None):
                 starlist_str2 = "{:s}{:s} {:s}  2000.0  {:s} {:s}\n".format(name.ljust(16), *deg2hour(ra, dec, sep=" "), commentchar, rmag )
             else:
@@ -745,4 +898,5 @@ if __name__ == '__main__':
         num_offset_stars = 3
 
     
-    get_finder(ra, dec, name, rad, telescope=telescope, debug=False, minmag=13, maxmag=19.5, num_offset_stars=num_offset_stars)
+    get_finder(ra, dec, name, rad, telescope=telescope, debug=False, minmag=13, 
+        maxmag=19.5, num_offset_stars=num_offset_stars)

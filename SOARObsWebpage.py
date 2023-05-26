@@ -1,17 +1,5 @@
 # Create SOAR Observing Night Webpages
 #
-# To run:
-# 
-#   1. Create/edit user_inputs.ini file...
-#   2. cd to GitHub/SOAR_Goodman_ObsWebPage/python.
-#   3. python SOARObsWebpage.py <path to user_inputs.ini file>
-#      e.g.:
-#      python SOARObsWebpage.py ~/Desktop/user_inputs.ini
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# 1. Initial Setup
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 import numpy as np
 import pandas as pd
@@ -172,8 +160,7 @@ fout.write("""<BODY>\n""")
 fout.write("""\n""")
 fout.write("""<H1>SOAR-4m GW Target of Opportunity (ToO) Nite:  """+nite+"""</H1>\n""")
 fout.write("""\n""")
-fout.write("""<b><i>SOAR ToO Policy Overview ( <A HREF=http://www.ctio.noirlab.edu/soar/content/targets-opportunity-overview>webpage</A> )""")
-fout.write("""     and Specific ToO Protocols for SOAR 2018B ( <A HREF=./SOAR_TOO_Protocols.pdf>PDF</A> ) \n""")
+fout.write("""<b><i>SOAR ToO Policy Overview ( <A HREF=http://www.ctio.noirlab.edu/soar/content/targets-opportunity-overview>webpage</A> ) \n""")
 fout.write("""</i></b>\n""")
 fout.write("""\n""")
 fout.write("""<P>\n""")
@@ -196,10 +183,10 @@ fout.write("""<LI> <A HREF=./Preferred_Instrument_Setup.html> Preferred Instrume
 fout.write("""<LI> <A HREF=./Observing_Plan.html>  Nightly Observing Plan</A>\n""")
 fout.write("""<LI> <A HREF=http://www.briancasey.org/artifacts/astro/almanac.cgi?command=display&year="""+YYYY+"""&month="""+MM+"""&day="""+DD+"""&observatory=t&obslong=&obslat=&actual=&effective=&sitename=&zone=&zonename=&zoneabbrev=&daylight=>(CTIO) Sky Almanac for """+nite+"""</A>\n""")
 fout.write("""<LI> <A HREF=./Targets/Targets.html>Targets</A>:\n""")
-fout.write("""	<UL>\n""")
-fout.write("""	  <LI> <A HREF=./Targets/"""+priTargetName+"""/"""+priTargetName+""".html>"""+priTargetName+"""</A>\n""")
-fout.write("""	  <LI> <A HREF=./Targets/StdStars/StdStars.html> Standard Stars</A>\n""")
-fout.write("""	</UL>\n""")
+fout.write("""  <UL>\n""")
+fout.write("""    <LI> <A HREF=./Targets/"""+priTargetName+"""/"""+priTargetName+""".html>"""+priTargetName+"""</A>\n""")
+fout.write("""    <LI> <A HREF=./Targets/StdStars/StdStars.html> Standard Stars</A>\n""")
+fout.write("""  </UL>\n""")
 fout.write("""</UL>\n""")
 fout.write("""\n""")
 fout.write("""<H2>Guides</H2>\n""")
@@ -239,17 +226,17 @@ fout.write("""<UL>\n""")
 fout.write("""<LI> <A HREF=http://skyview.gsfc.nasa.gov/>SkyView</A>\n""")
 fout.write("""<LI> <A HREF=http://aps.umn.edu/catalog/finder_chart/> MAPS finder chart engine</A>\n""")
 fout.write("""<LI> <A HREF=http://deslabs.ncsa.illinois.edu/>DES Labs</A>\n""")
-fout.write("""	<UL> \n""")
-fout.write("""	  <LI> <A HREF=http://descut.cosmology.illinois.edu/>Cutout Server</A>\n""")
-fout.write("""	  <LI> <A HREF=http://descut.cosmology.illinois.edu/footprint>Footprint Server</A>\n""")
-fout.write("""	</UL>\n""")
+fout.write("""  <UL> \n""")
+fout.write("""    <LI> <A HREF=http://descut.cosmology.illinois.edu/>Cutout Server</A>\n""")
+fout.write("""    <LI> <A HREF=http://descut.cosmology.illinois.edu/footprint>Footprint Server</A>\n""")
+fout.write("""  </UL>\n""")
 fout.write("""\n""")
 fout.write("""<LI> <A HREF=http://www.briancasey.org/artifacts/astro/> Brian Casey's Astronomy Tools:</A>\n""")
-fout.write("""	<UL> \n""")
-fout.write("""	  <LI> <A HREF=http://www.briancasey.org/artifacts/astro/airmass.cgi> Hourly Airmass Tables</A>\n""")
-fout.write("""	  <LI> <A HREF=http://www.briancasey.org/artifacts/astro/skycalendar.cgi> Monthly Sky Calendar</A>\n""")
-fout.write("""	  <LI> <A HREF=http://www.briancasey.org/artifacts/astro/observability.cgi> Object Seasonal Observability</A>\n""")
-fout.write("""	</UL>\n""")
+fout.write("""  <UL> \n""")
+fout.write("""    <LI> <A HREF=http://www.briancasey.org/artifacts/astro/airmass.cgi> Hourly Airmass Tables</A>\n""")
+fout.write("""    <LI> <A HREF=http://www.briancasey.org/artifacts/astro/skycalendar.cgi> Monthly Sky Calendar</A>\n""")
+fout.write("""    <LI> <A HREF=http://www.briancasey.org/artifacts/astro/observability.cgi> Object Seasonal Observability</A>\n""")
+fout.write("""  </UL>\n""")
 fout.write("""<LI> <A HREF=http://www.fourmilab.ch/cgi-bin/Yoursky?z=1&lat=30.165&ns=South&lon=70.815&ew=West> Sky Chart for CTIO</A>\n""")
 fout.write("""</UL>\n""")
 fout.write("""\n""")
@@ -276,17 +263,12 @@ fout.write("""<H2>Forms</H2>\n""")
 fout.write("""\n""")
 fout.write("""<UL>\n""")
 fout.write("""  <LI> <A HREF=http://www.ctio.noirlab.edu/soar/content/instrument-setup-forms-and-observing-reports>\n""")
-fout.write("""	  General SOAR Instrument Setup Forms and Observing Reports</A>\n""")
+fout.write("""    General SOAR Instrument Setup Forms and Observing Reports</A>\n""")
 fout.write("""     <UL>\n""")
 fout.write("""     <LI> <A HREF=http://www.ctio.noirlab.edu/SOAR/Forms/INST/setup.php>Instrument Setup Form</A>\n""")
 fout.write("""     <LI> <A HREF=http://www.ctio.noirlab.edu/SOAR/Forms/EON/Form.php?telescope=SOAR> SOAR End-of-night form</A>\n""")
 fout.write("""     <LI> <A HREF=http://www.ctio.noirlab.edu/new/Tools/Forms/EOR/Form.php?telescope=SOAR> SOAR End-of-run form</A>\n""")
 fout.write("""     </UL>\n""")
-fout.write("""<LI> Goodman Paper Log\n""")
-fout.write("""     (<A HREF=http://www.ctio.noirlab.edu/soar/sites/default/files/documents/GOODMAN-log.pdf>web version</A>, \n""")
-fout.write("""      <A HREF=./GOODMAN-log.pdf>local version</A>)\n""")
-fout.write("""<LI> <A HREF=./OldSchoolTargetAcqForm.pdf>Faint-Object Target Acquisition Checklist</A> (print out a copy for each target fainter than i=19)\n""")
-fout.write("""</UL>\n""")
 fout.write("""\n""")
 fout.write("""\n""")
 fout.write("""<HR>\n""")
@@ -422,10 +404,8 @@ fout.write("""<UL>\n""")
 fout.write("""<LI> <A HREF=./"""+priTargetName+"""targets.obs_strategy.html> Formatted for Observing Strategy</A> (includes Estimated Exposure Times, Finding Charts, Airmass Tables, etc.)\n""")
 fout.write("""<LI> <A HREF=./"""+priTargetName+"""targets.goodman_targetlist.txt> Formatted for the SOAR-4m TCS</A>\n""")
 fout.write("""</UL>\n""")
-fout.write("""<H3> <H3>Mosaic of Target Images (from DECam or SkyView): </H3>\n""")
+fout.write("""<H3> <H3>Mosaic of Target Images (from PS1 or SkyMapper): </H3>\n""")
 fout.write("""\n""")
-#fout.write("""<table border cellspacing=0 cellpadding=0>\n""")
-#fout.write("""<table border\n""")
 fout.write("""<table border cellspacing=0 cellpadding=20>\n""")
 
 # Open GWtargets.obs_strategy.html (fout2)...
@@ -576,11 +556,6 @@ fout2.write(outputLine2)
 # Write out final part of main body of fout...
 fout.write("""</table>\n""")
 fout.write("""\n""")
-fout.write("""<H3>Sky Distribution of Targets</H3>\n""")
-fout.write("""\n""")
-fout.write("""<P>\n""")
-fout.write("""<IMG SRC=./"""+priTargetName+"""targets.radec.png></CENTER>\n""")
-fout.write("""<P>\n""")
 fout.write("""\n""")
 fout.write("""\n""")
 
@@ -620,6 +595,3 @@ fout3.close()
 fout3a.close()
 fout4.close()
 freg_out.close()
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
