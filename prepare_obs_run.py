@@ -101,8 +101,13 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                 max_separation = 3*60 #3 arcmin, SOAR
                 min_mag = 8
                 max_mag = 19.5
+            elif telescope == 'Gemini':
+                finder_size = 5/60 # 5 arcmin, Gemini
+                max_separation = 1*60 # 2 arcmin, Gemini
+                min_mag = 11.0
+                max_mag = 19.5
             else:
-                print("Telescope should be Keck, Lick or SOAR; default=Lick.")
+                print("Telescope should be Keck, Lick, SOAR, or Gemini; default=Lick.")
                 finder_size = 4/60 #4 arcmin, Kast
                 max_separation = 3*60 #3 arcmin, Kast
                 min_mag = 11
@@ -168,7 +173,7 @@ if __name__ == '__main__':
                         help="filename of the target list")
 
     parser.add_argument("telescope", type = str,
-                        help="Keck, Lick, or SOAR")
+                        help="Keck, Lick, SOAR, or Gemini")
 
     parser.add_argument("-r", "--rotate", action="store_true",
                         help="produce rotated finder chart")
