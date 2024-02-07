@@ -114,6 +114,7 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                 max_mag = 17
 
             if max_mag: max_mag = max_mag
+            if max_offset_star_radius: max_separation = max_offset_star_radius
 
             #Obtain PA and separation from target ra/dec and host ra/dec
             #To do: make it not duplicate for the "get_finder" function.
@@ -122,10 +123,10 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                     host_ra, host_dec)
                 pa_offset = 30 #30 degree offset in slit viewing camera PA
 
-            starlist_entry, outimagename = get_finder( ra_deg, dec_deg, name,  finder_size,
-                            mag=mag, minmag=min_mag, maxmag=max_mag,
-                            num_offset_stars = 3, min_separation = 15,
-                            max_separation = None,\
+            starlist_entry, outimagename = get_finder(ra_deg, dec_deg, name,  
+                            finder_size,mag=mag, minmag=min_mag, maxmag=max_mag,
+                            num_offset_stars = 3, min_separation = 5,
+                            max_separation = max_separation,
                             host_ra = host_ra, host_dec = host_dec,
                             directory = 'finders',
                             starlist=None, print_starlist=False, 
