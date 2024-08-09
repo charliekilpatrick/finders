@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 This script takes the downloaded target list from YSE PZ and loops through the targets,
 producing finder chart and finding offset stars for them. If host is indicated in the input
@@ -47,14 +48,21 @@ def is_number(num):
     return(True)
 
 def do_obsrun(filename, telescope, rotate=False, debug=False, 
-    max_offset_star_radius=None, max_mag=None):
+    max_offset_star_radius=None, use_max_mag=None, num_offset_stars=3):
 
+    if telescope!='NEWFIRM':
+        table = asci.read(filename, names=('name','ra','dec','mag'))
 
-    table = asci.read(filename, names=('name','ra','dec','mag'))
+        coords = np.array([parse_coord(r['ra'], r['dec']) for r in table])
+        names = np.array(table['name'].data)
+        mags = np.array(table['mag'])
+    else:
+        table = asci.read(filename, names=('name','ra','dec','epoch'))
 
-    coords = np.array([parse_coord(r['ra'], r['dec']) for r in table])
-    names = np.array(table['name'].data)
-    mags = np.array(table['mag'])
+        coords = np.array([parse_coord(r['ra'], r['dec']) for r in table])
+        names = np.array(table['name'].data)
+
+        mags = np.array([20.0]*len(table))
 
     all_starlist = ''
 
@@ -90,7 +98,6 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                 max_separation = 3*60 #3 arcmin, LRIS
                 min_mag = 13
                 max_mag = 18.5
-
             elif telescope == 'Lick':
                 finder_size = 4/60 #4 arcmin, Kast
                 max_separation = 3*60 #3 arcmin, Kast
@@ -106,6 +113,12 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                 max_separation = 1*60 # 2 arcmin, Gemini
                 min_mag = 11.0
                 max_mag = 19.5
+            elif telescope == 'NEWFIRM':
+                finder_size = 28/60
+                max_separation = 0
+                min_mag = 0
+                max_mag = 0
+                num_offset_stars = 0
             else:
                 print("Telescope should be Keck, Lick, SOAR, or Gemini; default=Lick.")
                 finder_size = 4/60 #4 arcmin, Kast
@@ -113,7 +126,10 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
                 min_mag = 11
                 max_mag = 17
 
-            if max_mag: max_mag = max_mag
+            if use_max_mag: 
+                max_mag = float(use_max_mag)
+            if max_offset_star_radius: 
+                max_separation = float(max_offset_star_radius)
 
             #Obtain PA and separation from target ra/dec and host ra/dec
             #To do: make it not duplicate for the "get_finder" function.
@@ -124,13 +140,14 @@ def do_obsrun(filename, telescope, rotate=False, debug=False,
 
             starlist_entry, outimagename = get_finder( ra_deg, dec_deg, name,  finder_size,
                             mag=mag, minmag=min_mag, maxmag=max_mag,
-                            num_offset_stars = 3, min_separation = 15,
+                            num_offset_stars = num_offset_stars, min_separation = 15,
                             max_separation = None,\
                             host_ra = host_ra, host_dec = host_dec,
                             directory = 'finders',
                             starlist=None, print_starlist=False, 
                             return_starlist = True, debug=debug, 
                             output_format='png')
+            
             if os.path.exists(outimagename):
                 outimages.append(outimagename)
             print(starlist_entry)
@@ -192,5 +209,5 @@ if __name__ == '__main__':
     telescope = args.telescope
 
     do_obsrun(filename, telescope, rotate=args.rotate,
-        debug=args.debug, max_mag=args.max_mag,
+        debug=args.debug, use_max_mag=args.max_mag,
         max_offset_star_radius=args.max_offset_star_radius)

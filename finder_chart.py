@@ -74,6 +74,32 @@ def get_offset(ra1, dec1, ra2, dec2):
 
     return dra.to(u.arcsec).value, ddec.to(u.arcsec).value
 
+def query_gaia_catalog(ra, dec, radius_deg, minmag=14, maxmag=18.5):
+
+    coord = SkyCoord(ra, dec, unit='deg')
+
+    filters = {'PSS':'>0.99', 'PM':'<20.0'}
+
+    vquery = Vizier(columns=['RA_ICRS','DE_ICRS','PSS','PM','Gmag','e_Gmag'],
+        column_filters=filters)
+
+    radius = 2*radius_deg*u.deg
+
+    resp = vquery.query_region(coord, width=radius, catalog=['I/355/gaiadr3'])
+
+    if len(resp)>0:
+        catalog = resp[0]
+    else:
+        return(None)
+
+    newcat = Table([catalog['RA_ICRS'].data,
+                    catalog['DE_ICRS'].data,
+                    catalog['Gmag'].data],
+                    names=('ra','dec','mag'))
+
+    return(newcat)
+
+
 def query_sky_mapper_catalogue(ra, dec, radius_deg, minmag=14, maxmag=18.5):
     '''
     Sends a VO query to the SkyMapper catalogue.
@@ -592,22 +618,15 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
     except:
         ra, dec = hour2deg(ra, dec)
 
-    if dec < -35:
-        catalog = query_sky_mapper_catalogue(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag)
-    else:
-        catalog = query_ps1_catalogue(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag, debug = debug)
+    catalog = query_gaia_catalog(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag)
 
     if (debug):
         print("Catalog returned by the function.")
         print(catalog)
 
-
     if (len(catalog)==0):
         if debug: print("Looking for a bit fainter stars up to mag: %.2f"%(maxmag+0.5))
         catalog = query_ps1_catalogue(ra, dec, (rad/2.)*0.95, minmag=minmag, maxmag=maxmag+0.5)
-
-    if (not catalog is None and len(catalog)>0):
-        np.random.shuffle(catalog)
 
     ###########Reject stars that are too close
     offsets_stars = SkyCoord(catalog["ra"], catalog["dec"], unit = (u.deg, u.deg))
@@ -647,7 +666,7 @@ def get_finder(ra, dec, name, rad, debug=False, starlist=None,
 
 
     if len(catalog) >1:
-        catalog.sort(order='mag')
+        catalog.sort('mag')
 
     if (debug): print(catalog)
 
