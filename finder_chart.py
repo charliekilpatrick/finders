@@ -30,7 +30,7 @@ Vizier.ROW_LIMIT = -1
 
 def deg2hour(ra, dec, sep=":"):
     '''
-    Transforms the coordinates in degrees into HH:MM:SS DD:MM:SS with the requested separator.
+    Transforms the coordinates in degrees into HH:MM:SS DD:MM:SS with separator.
     '''
 
     if ( type(ra) is str and type(dec) is str ):
@@ -64,7 +64,8 @@ def hour2deg(ra, dec):
 def get_offset(ra1, dec1, ra2, dec2):
     '''
     Computes the offset in arcsec between two coordinates.
-    The offset is from (ra1, dec1) - generally an offset star to (ra2, dec2) - the fainter target.
+    The offset is from (ra1, dec1) - 
+    generally an offset star to (ra2, dec2) - the fainter target.
     '''
 
     from astropy.coordinates import SkyCoord
@@ -78,7 +79,7 @@ def query_gaia_catalog(ra, dec, radius_deg, minmag=14, maxmag=18.5):
 
     coord = SkyCoord(ra, dec, unit='deg')
 
-    filters = {'PSS':'>0.99', 'PM':'<20.0'}
+    filters = {'PSS':'>0.99', 'PM':'<15.0'}
 
     vquery = Vizier(columns=['RA_ICRS','DE_ICRS','PSS','PM','Gmag','e_Gmag'],
         column_filters=filters)
@@ -96,6 +97,13 @@ def query_gaia_catalog(ra, dec, radius_deg, minmag=14, maxmag=18.5):
                     catalog['DE_ICRS'].data,
                     catalog['Gmag'].data],
                     names=('ra','dec','mag'))
+
+    if minmag:
+        mask = newcat['mag']>minmag
+        newcat = newcat[mask]
+    if maxmag:
+        mask = newcat['mag']<maxmag
+        newcat = newcat[mask]
 
     return(newcat)
 
@@ -122,14 +130,16 @@ def query_sky_mapper_catalogue(ra, dec, radius_deg, minmag=14, maxmag=18.5):
     else:
         return(None)
 
-    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), ("dec", np.double), ("mag", np.float64)])
+    newcat = np.zeros(len(catalog), dtype=[("ra", np.double), 
+        ("dec", np.double), ("mag", np.float64)])
     newcat["ra"] = catalog["RAICRS"]
     newcat["dec"] = catalog["DEICRS"]
     newcat["mag"] = catalog["rPSF"]
 
     return newcat
 
-def query_ps1_catalogue(ra, dec, radius_deg, minmag=13, maxmag=18.0, debug = False):
+def query_ps1_catalogue(ra, dec, radius_deg, minmag=13, maxmag=18.0, 
+    debug=False):
     '''
     Sends a VO query to the PS1 catalogue.
     Filters the result by mangitude (between 15 and 18.5)

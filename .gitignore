@@ -1,2 +1,4 @@
 finders/
 starlists/
+__pycache__/
+*.pyc

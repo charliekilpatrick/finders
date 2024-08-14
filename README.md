@@ -7,7 +7,8 @@ Finder-generation code, originally developed by Kaew Tinyanont and extended by C
 To build the dependencies for the finders repository, run:
 
 ```
-conda create -n finders astroplan astropy astroquery matplotlib numpy pandas pillow requests scipy six python
+conda create -n finders python=3.12
+pip install -r requirements.txt
 ```
 
 ## Usage
